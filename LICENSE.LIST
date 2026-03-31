@@ -1,0 +1,30 @@
+# 依赖协议清单 (LICENSE.LIST)
+
+> 本文件由 AI 自动化依赖协议审计生成。
+> 生成时间：2026-03-31
+> 审计工具：AI 依赖协议审计 (https://tpscsm-docs.pages.dev/license-audit/)
+
+## 统计摘要
+
+| 协议类型 | 数量 | 风险等级 |
+|---------|------|---------|
+| MIT | 2 | ✅ 低风险 |
+| BSD-3-Clause | 1 | ✅ 低风险 |
+| LGPL-3.0-only / GPL-2.0-only / GPL-3.0-only | 1 | ⚠️ 需关注 |
+
+**总计：** 4 个直接依赖
+
+## 依赖详情
+
+| 序号 | 依赖名称 | 版本 | 协议 (SPDX) | 来源 | 风险 | 备注 |
+|------|---------|------|-------------|------|------|------|
+| 1 | PySide6 | >=6.6.0 | LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only | https://pypi.org/project/PySide6/ | ⚠️ 需关注 | Qt for Python 官方包；开源，但含 Copyleft 选项 |
+| 2 | SQLAlchemy | >=2.0.0 | MIT | https://pypi.org/project/SQLAlchemy/ | ✅ 低风险 | |
+| 3 | Pillow | >=10.0.0 | MIT-CMU (等同 MIT) | https://github.com/python-pillow/Pillow/blob/main/LICENSE | ✅ 低风险 | |
+| 4 | av | >=11.0.0 | BSD-3-Clause | https://github.com/PyAV-Org/PyAV/blob/main/LICENSE.txt | ✅ 低风险 | |
+
+## 说明
+
+- 以上列表仅审计直接依赖，不包含传递依赖。
+- 已确认依赖均为开源协议。
+- 当前项目已声明项目协议为 MIT。
