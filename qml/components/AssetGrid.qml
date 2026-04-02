@@ -45,7 +45,9 @@ Rectangle {
         delegate: AssetCard {
             width: grid.cardSize
             height: grid.cardSize + 32
-            thumbPath: thumbnailPath
+            assetId: model.assetId
+            thumbPath: model.thumbnailPath
+            filePath: model.filePath
             fileName: model.fileName
             fileType: model.fileType
             isSelected: GridView.isCurrentItem

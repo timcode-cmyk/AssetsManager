@@ -67,6 +67,14 @@ class TagController(QObject):
         except Exception as e:
             self.error.emit(str(e))
 
+    @Slot(int, str)
+    def renameGroup(self, group_id: int, new_name: str) -> None:
+        try:
+            self._svc.rename_group(group_id, new_name)
+            self.groupsChanged.emit()
+        except Exception as e:
+            self.error.emit(str(e))
+
     @Slot(int)
     def deleteGroup(self, group_id: int) -> None:
         self._svc.delete_group(group_id)

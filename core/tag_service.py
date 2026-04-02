@@ -58,6 +58,12 @@ class TagService:
     def delete_group(self, group_id: int) -> None:
         self._db.delete_group(group_id)
 
+    def rename_group(self, group_id: int, new_name: str) -> None:
+        new_name = new_name.strip()
+        if not new_name:
+            raise ValueError("Group name cannot be empty")
+        self._db.rename_group(group_id, new_name)
+
     def get_group_stats(self, group_id: int) -> Dict[str, Any]:
         count = self._db.get_group_asset_count(group_id)
         return {"asset_count": count}

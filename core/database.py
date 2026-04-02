@@ -94,6 +94,20 @@ class DatabaseService(IDatabaseService):
                 a.thumbnail_path = thumbnail_path
                 s.commit()
 
+    def rename_asset(self, asset_id: int, new_name: str) -> None:
+        with self._Session() as s:
+            a = s.get(Asset, asset_id)
+            if a:
+                a.file_name = new_name
+                s.commit()
+
+    def move_asset(self, asset_id: int, new_group_id: Optional[int]) -> None:
+        with self._Session() as s:
+            a = s.get(Asset, asset_id)
+            if a:
+                a.group_id = new_group_id
+                s.commit()
+
     def delete_asset(self, asset_id: int) -> None:
         with self._Session() as s:
             a = s.get(Asset, asset_id)
@@ -128,6 +142,13 @@ class DatabaseService(IDatabaseService):
                 s.commit()
             return g.to_dict()
 
+    def rename_group(self, group_id: int, new_name: str) -> None:
+        with self._Session() as s:
+            g = s.get(Group, group_id)
+            if g:
+                g.name = new_name
+                s.commit()
+
     def create_group(
         self, name: str, parent_id: Optional[int] = None, color: str = "#7B68EE"
     ) -> Dict[str, Any]:
@@ -141,6 +162,9 @@ class DatabaseService(IDatabaseService):
         with self._Session() as s:
             g = s.get(Group, group_id)
             if g:
+                # Move child assets to parent or root?
+                # For now just delete group (SQLite Cascade will handle child groups if defined, 
+                # but Asset doesn't have CASCADE by default in most setups).
                 s.delete(g)
                 s.commit()
 

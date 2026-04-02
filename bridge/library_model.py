@@ -129,6 +129,50 @@ class LibraryModel(QAbstractListModel):
         self._file_type = file_type or None
         self.refresh()
 
+    @Slot(int, str)
+    def renameAsset(self, asset_id: int, new_name: str) -> None:
+        self._db.rename_asset(asset_id, new_name)
+        self.refresh()
+
+    @Slot(int, int)
+    def moveAsset(self, asset_id: int, new_group_id: int) -> None:
+        # -1 represents no group
+        gid = None if new_group_id < 0 else new_group_id
+        self._db.move_asset(asset_id, gid)
+        self.refresh()
+
+    @Slot(int)
+    def deleteAsset(self, asset_id: int) -> None:
+        self._db.delete_asset(asset_id)
+        self.refresh()
+
+    @Slot(int)
+    def revealInExplorer(self, asset_id: int) -> None:
+        """Opens the native file explorer and selects the file."""
+        import subprocess
+        import sys
+        import os
+        from pathlib import Path
+
+        # Find the asset
+        asset = next((a for a in self._assets if a["id"] == asset_id), None)
+        if not asset:
+            return
+        
+        p = Path(asset["file_path"])
+        if not p.exists():
+            return
+            
+        if sys.platform == "darwin":
+            subprocess.run(["open", "-R", str(p)])
+        elif sys.platform == "win32":
+            # /select specifies that the given file should be selected
+            # Note: explorer /select, path requires backslashes
+            subprocess.run(["explorer", "/select,", os.path.normpath(str(p))])
+        else:
+            # Linux (xdg-open)
+            subprocess.run(["xdg-open", str(p.parent)])
+
     @Slot(result=int)
     def count(self) -> int:
         return len(self._assets)

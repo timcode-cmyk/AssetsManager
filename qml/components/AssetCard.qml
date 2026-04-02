@@ -4,7 +4,9 @@ import QtQuick.Controls
 Item {
     id: root
 
+    property int assetId: -1
     property string thumbPath: ""
+    property string filePath: ""
     property string fileName: ""
     property string fileType: "image"
     property bool isSelected: false
@@ -109,6 +111,52 @@ Item {
         layer.enabled: true
     }
 
+    // ── Context Menu ──────────────────────────────────────────────────
+    Menu {
+        id: contextMenu
+        
+        MenuItem {
+            text: "重命名"
+            onTriggered: renameDialog.open()
+        }
+        MenuItem {
+            text: "在文件夹中显示"
+            onTriggered: libraryModel.revealInExplorer(assetId)
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: "从库中移除"
+            onTriggered: deleteDialog.open()
+        }
+    }
+
+    // ── Dialogs ───────────────────────────────────────────────────────
+    Dialog {
+        id: renameDialog
+        title: "重命名素材"
+        modal: true; anchors.centerIn: Overlay.overlay
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: libraryModel.renameAsset(assetId, nameInput.text)
+        
+        Column {
+            spacing: 12; padding: 20
+            Text { text: "输入新的名称:"; color: "#E4E4EA" }
+            TextField {
+                id: nameInput; text: fileName; width: 260
+                color: "#E4E4EA"; background: Rectangle { color: "#252535"; radius: 4 }
+            }
+        }
+    }
+
+    Dialog {
+        id: deleteDialog
+        title: "确认移除"
+        modal: true; anchors.centerIn: Overlay.overlay
+        standardButtons: Dialog.Yes | Dialog.No
+        onAccepted: libraryModel.deleteAsset(assetId)
+        Text { padding: 20; text: "确定要从库中移除这个素材吗？\n(这不会删除磁盘上的原始文件)"; color: "#E4E4EA" }
+    }
+
     // ── Mouse + Drag ───────────────────────────────────────────────────
     MouseArea {
         id: cardMa
@@ -120,7 +168,11 @@ Item {
         drag.threshold: 8
 
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton) root.clicked()
+            if (mouse.button === Qt.RightButton) {
+                contextMenu.popup()
+            } else {
+                root.clicked()
+            }
         }
         onDoubleClicked: root.doubleClicked()
         onPressed: (mouse) => {

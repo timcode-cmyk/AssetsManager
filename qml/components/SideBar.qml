@@ -28,25 +28,25 @@ Rectangle {
 
             SideItem {
                 icon: "◈"; label: "全部素材"
-                onClicked: libraryModel.setGroupFilter(-1)
+                onItemClicked: libraryModel.setGroupFilter(-1)
             }
             SideItem {
                 icon: "▣"; label: "图片"
-                onClicked: {
+                onItemClicked: {
                     libraryModel.setGroupFilter(-1)
                     libraryModel.setFileTypeFilter("image")
                 }
             }
             SideItem {
                 icon: "▶"; label: "视频"
-                onClicked: {
+                onItemClicked: {
                     libraryModel.setGroupFilter(-1)
                     libraryModel.setFileTypeFilter("video")
                 }
             }
             SideItem {
                 icon: "♪"; label: "音频"
-                onClicked: {
+                onItemClicked: {
                     libraryModel.setGroupFilter(-1)
                     libraryModel.setFileTypeFilter("audio")
                 }
@@ -64,22 +64,32 @@ Rectangle {
                 model: tagController.getGroupTree()
 
                 delegate: Column {
+                    id: groupCol
                     width: root.width
+                    property bool expanded: true
 
                     SideItem {
-                        icon: "▸"; label: modelData.name
+                        groupId: modelData.id
+                        icon: groupCol.expanded ? "▾" : "▸"
+                        label: modelData.name
                         countBadge: modelData.asset_count
                         indentLevel: 0
-                        onClicked: libraryModel.setGroupFilter(modelData.id)
+                        onItemClicked: libraryModel.setGroupFilter(modelData.id)
+                        onExpandClicked: groupCol.expanded = !groupCol.expanded
                     }
 
-                    Repeater {
-                        model: modelData.children
-                        delegate: SideItem {
-                            icon: "▸"; label: modelData.name
-                            countBadge: modelData.asset_count
-                            indentLevel: 1
-                            onClicked: libraryModel.setGroupFilter(modelData.id)
+                    Column {
+                        width: parent.width
+                        visible: groupCol.expanded
+                        Repeater {
+                            model: modelData.children
+                            delegate: SideItem {
+                                groupId: modelData.id
+                                label: modelData.name
+                                countBadge: modelData.asset_count
+                                indentLevel: 1
+                                onItemClicked: libraryModel.setGroupFilter(modelData.id)
+                            }
                         }
                     }
                 }
@@ -98,7 +108,7 @@ Rectangle {
                 delegate: SideItem {
                     icon: "●"; iconColor: modelData.color
                     label: modelData.name
-                    onClicked: {
+                    onItemClicked: {
                         // TODO: multi-tag filter
                     }
                 }
@@ -151,17 +161,41 @@ Rectangle {
     }
 
     component SideItem: Rectangle {
+        property int groupId: -1
         property string icon: ""
         property string iconColor: "#7A7A90"
         property alias label: itemLabel.text
         property int countBadge: -1
         property int indentLevel: 0
-        signal clicked()
+        signal itemClicked()
+        signal expandClicked()
 
         width: root.width; height: 34
         color: itemMa.containsMouse ? "#1E1E2E" : "transparent"
         radius: 6
         Behavior on color { ColorAnimation { duration: 100 } }
+
+        Menu {
+            id: itemContextMenu
+            MenuItem { text: "重命名"; onTriggered: renameGroupDlg.open() }
+            MenuItem { text: "删除分组"; onTriggered: deleteGroupDlg.open() }
+        }
+
+        SimpleInputDialog {
+            id: renameGroupDlg
+            title: "重命名分组"
+            placeholder: "新名称…"
+            onAccepted: (text) => tagController.renameGroup(groupId, text)
+        }
+
+        Dialog {
+            id: deleteGroupDlg
+            title: "确认删除"
+            modal: true; anchors.centerIn: Overlay.overlay
+            standardButtons: Dialog.Yes | Dialog.No
+            onAccepted: tagController.deleteGroup(groupId)
+            Text { padding: 20; text: "确定要删除分组 「" + label + "」 吗？\n(素材不会被删除)"; color: "#E4E4EA" }
+        }
 
         Row {
             anchors {
@@ -173,6 +207,14 @@ Rectangle {
                 text: icon; color: iconColor
                 font.pixelSize: 10
                 anchors.verticalCenter: parent.verticalCenter
+                visible: icon !== ""
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: (mouse) => {
+                        mouse.accepted = true
+                        parent.parent.parent.expandClicked()
+                    }
+                }
             }
             Text {
                 id: itemLabel
@@ -181,23 +223,25 @@ Rectangle {
             }
         }
 
-        // Count badge
         Rectangle {
             visible: countBadge >= 0
             anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
             width: Math.max(20, countLabel.implicitWidth + 8); height: 16; radius: 8
             color: "#2A2A3E"
-            Text {
-                id: countLabel
-                anchors.centerIn: parent
-                text: countBadge; color: "#7070A0"; font.pixelSize: 9
-            }
+            Text { id: countLabel; anchors.centerIn: parent; text: countBadge; color: "#7070A0"; font.pixelSize: 9 }
         }
 
         MouseArea {
             id: itemMa; anchors.fill: parent; hoverEnabled: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             cursorShape: Qt.PointingHandCursor
-            onClicked: parent.clicked()
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton && groupId >= 0) {
+                    itemContextMenu.popup()
+                } else {
+                    parent.itemClicked()
+                }
+            }
         }
     }
 
