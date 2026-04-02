@@ -186,8 +186,13 @@ Item {
         Drag.active: cardMa.drag.active
         Drag.dragType: Drag.Automatic
         Drag.supportedActions: Qt.CopyAction
-        Drag.mimeData: ({
-            "text/uri-list": filePath ? "file://" + filePath + "\n" : ""
-        })
+        Drag.mimeData: {
+            if (!root.filePath) return {};
+            var path = root.filePath.replace(/\\/g, "/");
+            var cleanPath = path.startsWith("/") ? path : "/" + path;
+            return {
+                "text/uri-list": encodeURI("file://" + cleanPath)
+            }
+        }
     }
 }

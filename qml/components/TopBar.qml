@@ -12,6 +12,13 @@ Rectangle {
 
     property string statusText: ""
 
+    TapHandler {
+        onTapped: {
+            searchField.focus = false
+            root.forceActiveFocus()
+        }
+    }
+
     RowLayout {
         anchors { fill: parent; leftMargin: 16; rightMargin: 16 }
         spacing: 12
@@ -61,7 +68,6 @@ Rectangle {
                     background: Item {}
                     onTextChanged: root.searchChanged(text)
 
-                    onAccepted: focus = false
                     Keys.onPressed: (event) => {
                         if (event.key === Qt.Key_Escape) {
                             focus = false

@@ -62,24 +62,27 @@ class FolderScanner(IScannerService):
     def cancel(self) -> None:
         self._cancelled = True
 
-    def scan_folder(
+    def scan_paths(
         self,
-        folder_path: Path,
+        paths: list[Path],
         progress_callback: Callable[[int, int, str], None],
     ) -> None:
         self._cancelled = False
-        folder_path = Path(folder_path)
 
-        # --- Collect all qualifying files first ---
         all_files: list[Path] = []
-        for root, dirs, files in os.walk(folder_path):
-            dirs[:] = sorted(d for d in dirs if not d.startswith("."))
-            for fname in sorted(files):
-                if fname.startswith("."):
-                    continue
-                p = Path(root) / fname
-                if _file_type(p.suffix):
-                    all_files.append(p)
+        for path in paths:
+            if path.is_file():
+                if _file_type(path.suffix):
+                    all_files.append(path)
+            elif path.is_dir():
+                for root, dirs, files in os.walk(path):
+                    dirs[:] = sorted(d for d in dirs if not d.startswith("."))
+                    for fname in sorted(files):
+                        if fname.startswith("."):
+                            continue
+                        p = Path(root) / fname
+                        if _file_type(p.suffix):
+                            all_files.append(p)
 
         total = len(all_files)
         # group_id cache: folder path str -> group id
@@ -99,8 +102,12 @@ class FolderScanner(IScannerService):
                 if asset:
                     asset_id = asset["id"]
                 else:
+                    # Resolve group based on the supplied path it belonged to
+                    base_path = next((p for p in paths if file_path.is_relative_to(p) or file_path == p), file_path.parent)
+                    root_for_group = base_path if base_path.is_dir() else base_path.parent
+                    
                     # 2. Resolve group
-                    group_id = self._resolve_group(file_path, folder_path, group_cache)
+                    group_id = self._resolve_group(file_path, root_for_group, group_cache)
 
                     # 3. Build asset data
                     stat = file_path.stat()
@@ -137,13 +144,18 @@ class FolderScanner(IScannerService):
                     processed_count += 1
                     progress_callback(processed_count, total, file_path.name)
 
-        # Use a thread pool for parallel processing
-        # Adjust max_workers as needed (e.g., number of cores or a fixed number)
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
             for file_path in all_files:
                 if self._cancelled:
                     break
                 executor.submit(process_file, file_path)
+
+    def scan_folder(
+        self,
+        folder_path: Path,
+        progress_callback: Callable[[int, int, str], None],
+    ) -> None:
+        self.scan_paths([folder_path], progress_callback)
 
     # ------------------------------------------------------------------
     def _resolve_group(

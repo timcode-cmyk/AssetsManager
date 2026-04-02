@@ -6,6 +6,10 @@ Rectangle {
     id: root
     color: "#0C0C10"
 
+    TapHandler {
+        onTapped: grid.forceActiveFocus()
+    }
+
     property alias currentIndex: grid.currentIndex
 
     // ── Drop area (Finder / system → library) ───────────────────────────
@@ -54,9 +58,11 @@ Rectangle {
 
             onClicked: {
                 grid.currentIndex = index
+                grid.forceActiveFocus()
             }
             onDoubleClicked: {
                 grid.currentIndex = index
+                grid.forceActiveFocus()
                 previewController.openPreview(index)
             }
         }

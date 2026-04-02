@@ -50,6 +50,19 @@ class ScanController(QObject):
         )
         self._thread.start()
 
+    @Slot("QStringList")
+    def startScanPaths(self, path_list: list[str]) -> None:
+        if self._thread and self._thread.is_alive():
+            return
+
+        self.scanStarted.emit()
+        self._thread = threading.Thread(
+            target=self._run_paths,
+            args=(path_list,),
+            daemon=True,
+        )
+        self._thread.start()
+
     @Slot()
     def cancelScan(self) -> None:
         self._scanner.cancel()
@@ -60,6 +73,26 @@ class ScanController(QObject):
         try:
             added_before = len(self._db.get_assets())
             self._scanner.scan_folder(Path(folder_path), self._progress_cb)
+            added_after = len(self._db.get_assets())
+            self.scanFinished.emit(added_after - added_before)
+        except Exception as exc:
+            self.scanError.emit(str(exc))
+
+    def _run_paths(self, path_list: list[str]) -> None:
+        try:
+            from PySide6.QtCore import QUrl
+            added_before = len(self._db.get_assets())
+            
+            clean_paths: list[Path] = []
+            for p in path_list:
+                url = QUrl(p)
+                if url.isLocalFile():
+                    clean_paths.append(Path(url.toLocalFile()))
+                else:
+                    clean_paths.append(Path(p))
+
+            self._scanner.scan_paths(clean_paths, self._progress_cb)
+            
             added_after = len(self._db.get_assets())
             self.scanFinished.emit(added_after - added_before)
         except Exception as exc:

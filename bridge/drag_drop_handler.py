@@ -67,7 +67,7 @@ class DragDropHandler(QObject):
         import threading
         def _worker():
             try:
-                dirs_to_scan: set[str] = set()
+                dirs_or_files_to_scan: set[str] = set()
                 for p in paths:
                     if p.is_dir():
                         dest = p
@@ -76,16 +76,16 @@ class DragDropHandler(QObject):
                             import shutil
                             dest = LIBRARY_ROOT / p.name
                             shutil.copytree(str(p), str(dest), dirs_exist_ok=True)
-                        dirs_to_scan.add(str(dest))
+                        dirs_or_files_to_scan.add(str(dest))
                     else:
                         dest = p
                         if managed:
                             LIBRARY_ROOT.mkdir(parents=True, exist_ok=True)
                             dest = self._file_ops.copy_into_library(p, LIBRARY_ROOT)
-                        dirs_to_scan.add(str(dest.parent))
+                        dirs_or_files_to_scan.add(str(dest))
 
-                for folder in dirs_to_scan:
-                    self._scan_ctrl.startScan(folder)
+                if dirs_or_files_to_scan:
+                    self._scan_ctrl.startScanPaths(list(dirs_or_files_to_scan))
 
                 self.importFinished.emit()
             except Exception as exc:

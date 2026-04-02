@@ -1,0 +1,40 @@
+---
+description: "AssetsManager 项目的编码规范、架构指南与 UI 风格标准"
+globs: ["*.py", "*.qml"]
+---
+
+# AssetsManager 编码与技术规范
+
+为了保证 AssetsManager 项目代码风格一致、层次分明、性能优越且易于扩展，AI 助手在编写或修改代码时需严格遵守以下规范。
+
+## 1. 架构与依赖分离 (MVC 结构)
+项目分为三个核心层级，必须严格遵守职责划分：
+- **`core/` (业务与数据层)**: 纯 Python 代码，包含数据库 (`sqlite3`)、文件系统的交互逻辑。不应该包含任何 Qt/PySide6 的 UI 代码。
+- **`bridge/` (控制与接口层)**: PySide6 的 `QObject` 和 `QAbstractListModel` 子类代码，作为 Python 核心与 QML 前端通信的桥梁。必须使用 `@Slot` 和 `Signal` 提供接口。
+- **`qml/` (视图表现层)**: 纯 QML 代码，只负责界面交互和动画排版，核心逻辑必须抛给 python 层的 Controllers 执行。
+
+## 2. 命名规范与接口定义
+- **Python层**: 
+  - 文件名、变量名、方法名使用 `snake_case` (如 `file_path`, `get_assets`)。
+  - 类名使用 `PascalCase` (如 `DatabaseService`)。
+  - 模型暴露给 QML 查询的字典 key 应该是 `camelCase` 或者在模型端手动映射为 QML 友好的 `camelCase` 角色词典（参阅 `library_model.py` 的 `_ROLE_NAMES`）。
+- **QML与跨层接口**:
+  - `Signals` 和 `Slots` 的命名采用 `camelCase` (如 `startScan`, `onScanRequested`)。
+  - QML 文件名与自定义 Component 名称必须为首字母大写的 `PascalCase` (如 `AssetCard.qml`)。
+- **类型提示 (Type Hints)**: Python 层必须提供严格的参数和返回类型注解，引入 `from __future__ import annotations`。
+
+## 3. UI/UX 与样式标准
+- 应用程序采用现代深色模式 (Sleek Dark Mode)。颜色搭配参考：
+  - 核心背景色: `#0C0C10` (窗口), `#13131A` (顶部栏/侧栏), `#1C1C26` (卡片默认)
+  - 强调色 (Accent Colors): 主调紫色 `#7B68EE`, 悬停提亮 `#9B8BFF`
+  - 文本色系: 亮灰色 `#E4E4EA` (正文), 暗灰色 `#5A5A72` (次要文本/图标)
+- **动效约束**: 在有颜色切换、显示/隐藏时，务必使用 `Behavior on [property]` 添加微动效（如 `ColorAnimation { duration: 150 }` 或 `NumberAnimation`）。不应存在生硬的 UI 切换。
+- **拖拽行为 (Drag and Drop)**: 系统拖入应用时，利用 `DropArea` 转发文件路径列表至 `dragDropHandler`。向外部系统等对象应用输出内容需设置 `Drag.mimeData`，同时务必对传入与传出使用标准的 `file://` + `encodeURI()` 处理，不携带多余不可见字符。
+
+## 4. 性能与跨平台处理
+- **多线程处理**: 在 `bridge/` 层的重负载逻辑 (如文件扫描、哈希验证、大规格批量复制) 必须放在后台线程中 (`threading.Thread` 或 QThread)，不阻塞 GUI 线程，并通过 Signal 反馈进度。
+- **资源路径跨平台处理**: Windows 和 macOS 下的路径机制存在差异。永远使用 `pathlib.Path` 读取文件路径。当从 QML 收到类似于 `file:///` 的 NSURL 时，先转换为 Python Local Path：`QUrl(folder_path).toLocalFile()`。
+
+## 5. 常规功能特性提示
+- 焦点问题：当在视图（如 `AssetGrid` 或 Sidebar）中点击操作元素时，应根据场景调用 `forceActiveFocus()` 使全局捕获器和画布接管键盘响应，并让输入框正确失焦，而不是只依赖触发事件（如只对回车动作触发失去焦点）。
+- 单功能更新保持简洁原则，不擅自修改与目标功能无关的界面。
